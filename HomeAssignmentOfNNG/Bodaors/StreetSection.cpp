@@ -23,16 +23,20 @@ void StreetSection::CreateSectionFromDBLine(const string& line, StreetSection& l
 		if (!schemeLeft.empty()) {
 			leftSection.name = name;
 			leftSection.scheme = schemeLeft[0];
-			leftSection.from = atoi(tokens[21].c_str());
-			leftSection.to = atoi(tokens[22].c_str());
+			int hs1 = atoi(tokens[21].c_str());
+			int hs2 = atoi(tokens[22].c_str());
+			leftSection.from = hs1 <= hs2 ? hs1 : hs2;
+			leftSection.to = hs2 >= hs1 ? hs2 : hs1;
 		}
 		if (!schemeRight.empty()) {
-			leftSection.name = name;
-			leftSection.scheme = schemeRight[0];
-			leftSection.from = atoi(tokens[24].c_str());
-			leftSection.to = atoi(tokens[25].c_str());
+			rightSection.name = name;
+			rightSection.scheme = schemeRight[0];
+			 
+			int hs1 = atoi(tokens[24].c_str());
+			int hs2 = atoi(tokens[25].c_str());
+			rightSection.from = hs1 <= hs2 ? hs1 : hs2;
+			rightSection.to = hs2 >= hs1 ? hs2 : hs1;
 		}
 	}
-
 	lineCount++;
 }

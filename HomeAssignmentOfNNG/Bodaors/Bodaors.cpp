@@ -9,7 +9,18 @@
 #include "Windows.h"
 using namespace std;
 vector<StreetSection> sections;
-typedef pair<int, int> Range;
+typedef struct Range {
+    char scheme;
+    int from;
+    int to;
+    Range(const StreetSection &ss = StreetSection())
+    {
+        scheme = ss.scheme;
+        from = ss.from;
+        to = ss.to;
+    }
+};
+//typedef pair<int, int> Range;
 typedef vector< Range > Ranges;
 typedef map<string, Ranges> SectionMap;
 SectionMap sectionsMap;
@@ -32,33 +43,54 @@ void readSectionsFromFile(const string& pathName) {
     }
 }
 
-bool isOverlapped(const Ranges& ranges, const Range& range, Range &overlap) {
-    for (const Range& r : ranges) {
-        if (range.first >= r.first && range.first <= r.second) {
-            overlap.first = r.first;
-            overlap.second = range.second;
-            return true;
-        }
-        if (range.second >= r.first && range.second <= r.second) {
-            overlap.first = r.first;
-            overlap.second = range.second;
-            return true;
-        }
+void buildSectionMap() {
+    for (const StreetSection& section : sections) {
+        Ranges& ranges = sectionsMap[section.name];
+        Range range(section);
+        ranges.push_back(range);
     }
-    return false;
+}
+
+bool isOverlapped(const Range& range, const Range& range2, Range &overlap) {
+    if (range.scheme != range2.scheme)
+        return false;
+    if (!(range.from < range2.from && range.to < range2.from))
+        return false; // make sure the sections do not meet. BELLOW
+    if (!(range.from > range2.to && range.to > range2.to))
+        return false; // make sure the sections do not meet. ABOVE
+
+    if (range.from >= range2.from && range.to <= range2.to) {
+        overlap.from = range.from;
+        overlap.to = range.to;
+        overlap.scheme = (range.scheme != range2.scheme) ? 'M' : range.scheme;
+    }
+    else //if(range.from < range2.from)
+    {
+        overlap.from = range2.from;
+        overlap.to = range.to;
+    }
+    overlap.scheme = (range.scheme != range2.scheme) ? 'M' : range.scheme;
+    return true;
 }
 
 int processSections() {
     int count = 0;
-    for (const StreetSection& section : sections) {
-        Ranges& ranges = sectionsMap[section.name];
-        Range range(section.from, section.to);
+    SectionMap::iterator it;
+    for (it = sectionsMap.begin(); it != sectionsMap.end(); it++) {
+        Ranges& ranges = it->second;
         Range overlap;
-        if (isOverlapped( ranges, range, overlap)) {
-            cout << section.name << ": " << section.scheme << " " << overlap.first << " "  << overlap.second << endl;
-            count++;
+        Ranges::iterator jt;
+        for (jt = ranges.begin(); jt != ranges.end(); jt++) {
+            const Range &r1 = *jt;
+            Ranges::iterator kt;
+            for (kt = jt + 1; kt != ranges.end(); kt++) {
+                const Range& r2 = *kt;
+                if (isOverlapped(r1, r2, overlap)) {
+                    cout << it->first << "  " << overlap.scheme << "  " << overlap.from << " " << overlap.to << endl;
+                    count++;
+                }
+            }
         }
-        ranges.push_back(range);
     }
     return count;
 }
@@ -69,8 +101,8 @@ int main()
     std::cout << "HomeAssignment solution of Székely Tibi!\n";
 
     readSectionsFromFile("network.mid");
+    buildSectionMap();
     int numOverlapped = processSections();
-    
     cout << "overlapped / all sections: " << numOverlapped << " / " << sections.size();
 }
 
